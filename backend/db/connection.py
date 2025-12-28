@@ -1,15 +1,20 @@
 import psycopg2
-from config import Config
+import os
+from dotenv import load_dotenv
+# from config import Config
+
+
+load_dotenv()
 
 def get_connection():
     
     # Conexión PostgreSQL
-    connection = psycopg2.connect(
-        host=Config.DB_HOST,
-        port=Config.DB_PORT,
-        dbname=Config.DB_NAME,
-        user=Config.DB_USER,
-        password=Config.DB_PASSWORD
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        sslmode="require"
     )
-    return connection
 
