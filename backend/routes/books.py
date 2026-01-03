@@ -4,6 +4,7 @@ from db.connection import get_connection
 books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 # Obtener todos los libros y su escritor
+
 @books_bp.route("/", methods=["GET"])
 def get_books():
 
@@ -33,13 +34,14 @@ def get_books():
             "title": row[1],
             "author": row[2]
         })
-    
+
     return jsonify(books)
 
 # Obtener los libros y la media de su puntuación
+
 @books_bp.route("/ratings", methods=["GET"])
 def get_books_with_rating():
-    
+
     conn = get_connection()
     cur = conn.cursor()
 
@@ -63,7 +65,7 @@ def get_books_with_rating():
     cur.close()
     conn.close()
 
-    books =[]
+    books = []
     for row in rows:
         books.append({
             "book_id": row[0],
@@ -72,7 +74,5 @@ def get_books_with_rating():
             "average_rating": row[3],
             "total_ratings": row[4]
         })
-    
+
     return jsonify(books)
-
-
