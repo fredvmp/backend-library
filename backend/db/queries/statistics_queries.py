@@ -6,27 +6,30 @@ def fetch_most_read_books():
     conn = get_connection()
     cur = conn.cursor()
 
-    query = """
-        SELECT 
-            b.id, 
-            b.title, 
-            a.name AS author, 
-            COUNT(DISTINCT rsh.user_id) AS times_read
-        FROM books b
-        JOIN reading_status_history rsh ON b.id = rsh.book_id
-        JOIN authors a ON b.author_id = a.id
-        WHERE rsh.status = 'FINISHED'
-        GROUP BY b.id, b.title, a.name
-        ORDER BY times_read DESC;
-    """
+    try:
 
-    cur.execute(query)
-    rows = cur.fetchall()
+        query = """
+            SELECT 
+                b.id, 
+                b.title, 
+                a.name AS author, 
+                COUNT(DISTINCT rsh.user_id) AS times_read
+            FROM books b
+            JOIN reading_status_history rsh ON b.id = rsh.book_id
+            JOIN authors a ON b.author_id = a.id
+            WHERE rsh.status = 'FINISHED'
+            GROUP BY b.id, b.title, a.name
+            ORDER BY times_read DESC;
+        """
 
-    cur.close()
-    conn.close()
+        cur.execute(query)
+        return cur.fetchall()
 
-    return rows
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 def fetch_readed_books_in_specific_date(start_date, end_date):
