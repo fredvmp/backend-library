@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 from db.queries.books_queries import fetch_books, fetch_books_with_rating
+from utils.errors import APIError
 
 
 books_bp = Blueprint("books", __name__, url_prefix="/books")
@@ -41,3 +42,8 @@ def get_books_with_rating():
         })
 
     return jsonify(books)
+
+
+@books_bp.route("/test-error")
+def test():
+    raise APIError("Error de prueba", 418)
