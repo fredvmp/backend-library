@@ -1,8 +1,10 @@
 from datetime import date, datetime
 from db.queries.statistics_queries import fetch_readed_books_in_specific_date
+from utils.logger import logger
 
 
 def get_readed_books_between_dates(start_date, end_date):
+    logger.info(f"Fetching books between {start_date} and {end_date}")
     rows = fetch_readed_books_in_specific_date(start_date, end_date)
 
     books = []

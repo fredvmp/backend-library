@@ -4,6 +4,8 @@ from routes.books import books_bp
 from routes.statistics import statistics_bp
 from utils.error_handler import register_error_handlers
 
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -13,8 +15,6 @@ def create_app():
     register_error_handlers(app)
 
     return app
-
-
 
 
 """
@@ -28,7 +28,3 @@ def health():
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
 """   
-
-if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)

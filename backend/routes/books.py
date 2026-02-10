@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify
 from db.queries.books_queries import fetch_books, fetch_books_with_rating
 from utils.errors import APIError
+from utils.logger import logger
 
 
 books_bp = Blueprint("books", __name__, url_prefix="/books")
@@ -10,6 +11,7 @@ books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 @books_bp.route("/", methods=["GET"])
 def get_books():
+    logger.info("GET /books/")
 
     rows = fetch_books()
 
@@ -28,6 +30,7 @@ def get_books():
 
 @books_bp.route("/ratings", methods=["GET"])
 def get_books_with_rating():
+    logger.info("GET /books/ratings")
 
     rows = fetch_books_with_rating()
 
@@ -46,4 +49,5 @@ def get_books_with_rating():
 
 @books_bp.route("/test-error")
 def test():
+    logger.info("test-error")
     raise APIError("Error de prueba", 418)

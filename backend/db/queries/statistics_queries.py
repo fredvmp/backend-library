@@ -1,10 +1,12 @@
 from db.connection import get_connection
+from utils.logger import logger
 
 
 def fetch_most_read_books():
 
     conn = get_connection()
     cur = conn.cursor()
+    logger.info("Executing query: fetch_most_read_books")
 
     try:
 
@@ -28,14 +30,17 @@ def fetch_most_read_books():
     finally:
         if cur:
             cur.close()
+            logger.info("Cursor closed")
         if conn:
             conn.close()
+            logger.info("Database connection closed")
 
 
 def fetch_readed_books_in_specific_date(start_date, end_date):
 
     conn = None
     cur = None
+    logger.info("Executing query: fetch_readed_books_in_specific_date")
 
     try:
         conn = get_connection()
@@ -65,5 +70,7 @@ def fetch_readed_books_in_specific_date(start_date, end_date):
     finally:
         if cur:
             cur.close()
+            logger.info("Cursor closed")
         if conn:
             conn.close()
+            logger.info("Database connection closed")

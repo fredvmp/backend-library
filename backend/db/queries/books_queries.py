@@ -1,10 +1,12 @@
 from db.connection import get_connection
+from utils.logger import logger
 
 
 def fetch_books():
 
     conn = get_connection()
     cur = conn.cursor()
+    logger.info("Executing query: fetch_books")
 
     query = """
         SELECT
@@ -20,7 +22,9 @@ def fetch_books():
     rows = cur.fetchall()
 
     cur.close()
+    logger.info("Cursor closed")
     conn.close()
+    logger.info("Database connection closed")
 
     return rows
 
@@ -29,6 +33,8 @@ def fetch_books_with_rating():
 
     conn = get_connection()
     cur = conn.cursor()
+    logger.info("Executing query: fetch_books_with_rating")
+
 
     query = """
         SELECT
@@ -48,6 +54,8 @@ def fetch_books_with_rating():
     rows = cur.fetchall()
 
     cur.close()
+    logger.info("Cursor closed")
     conn.close()
+    logger.info("Database connection closed")
 
     return rows
