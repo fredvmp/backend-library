@@ -74,3 +74,24 @@ def fetch_readed_books_in_specific_date(start_date, end_date):
         if conn:
             conn.close()
             logger.info("Database connection closed")
+
+
+# Statistic with pandas
+def fetch_all_books_with_author():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT a.name
+        FROM books b
+        JOIN authors a ON b.author_id = a.id
+    """
+
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return rows
+

@@ -3,6 +3,7 @@ import psycopg2
 from db.queries.statistics_queries import fetch_most_read_books
 from services.statistics_service import get_readed_books_between_dates
 from schemas.statistics_schema import parse_date_range
+from services.statistics_service import get_books_per_author
 from utils.logger import logger
 
 
@@ -34,4 +35,11 @@ def get_readed_books_in_specific_date():
     logger.info("GET /readed-books-specific-date")
     start_date, end_date = parse_date_range(request.args)
     result = get_readed_books_between_dates(start_date, end_date)
+    return jsonify(result)
+
+
+# Statistic with pandas
+@statistics_bp.route("/books-per-author", methods=["GET"])
+def books_per_author():
+    result = get_books_per_author()
     return jsonify(result)
