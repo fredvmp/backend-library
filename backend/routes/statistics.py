@@ -4,6 +4,8 @@ from db.queries.statistics_queries import fetch_most_read_books
 from services.statistics_service import get_readed_books_between_dates
 from schemas.statistics_schema import parse_date_range
 from services.statistics_service import get_books_per_author
+from services.statistics_service import get_books_per_country
+from services.statistics_service import get_books_finished_by_year
 from utils.logger import logger
 
 
@@ -43,3 +45,19 @@ def get_readed_books_in_specific_date():
 def books_per_author():
     result = get_books_per_author()
     return jsonify(result)
+
+@statistics_bp.route("/books-per-country", methods=["GET"])
+def books_per_country():
+    data = get_books_per_country()
+    return jsonify(data)
+
+@statistics_bp.route("/books-by-year", methods=["GET"])
+def books_by_year():
+
+    try:
+        result = get_books_finished_by_year()
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"Error getting books by year: {e}")
+        return jsonify({"error": "Database error"}), 500

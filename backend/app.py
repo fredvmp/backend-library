@@ -9,6 +9,8 @@ from utils.error_handler import register_error_handlers
 def create_app():
     app = Flask(__name__)
 
+    app.json.ensure_ascii = False
+
     app.register_blueprint(books_bp)
     app.register_blueprint(statistics_bp)
     

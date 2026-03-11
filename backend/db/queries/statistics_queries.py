@@ -95,3 +95,40 @@ def fetch_all_books_with_author():
 
     return rows
 
+
+def fetch_books_with_author_country():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT a.country
+        FROM books b
+        JOIN authors a ON b.author_id = a.id
+    """
+
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return rows
+
+
+def fetch_finished_books_dates():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT status_date
+        FROM reading_status_history
+        WHERE status = 'FINISHED'
+    """
+
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return rows
