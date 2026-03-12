@@ -6,6 +6,7 @@ from schemas.statistics_schema import parse_date_range
 from services.statistics_service import get_books_per_author
 from services.statistics_service import get_books_per_country
 from services.statistics_service import get_books_finished_by_year
+from services.statistics_service import get_reading_summary
 from utils.logger import logger
 
 
@@ -60,4 +61,16 @@ def books_by_year():
 
     except Exception as e:
         logger.error(f"Error getting books by year: {e}")
+        return jsonify({"error": "Database error"}), 500
+
+
+@statistics_bp.route("/monthly-reading-summary", methods=["GET"])
+def get_monthly_reading_summary():
+
+    try:
+        result = get_reading_summary()
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
         return jsonify({"error": "Database error"}), 500

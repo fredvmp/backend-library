@@ -132,3 +132,25 @@ def fetch_finished_books_dates():
     conn.close()
 
     return rows
+
+
+def fetch_reading_summary():
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    query = """
+        SELECT book_id, user_id, status_date
+        FROM reading_status_history
+        WHERE status = 'FINISHED'
+    """
+    
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return rows
+
+

@@ -4,6 +4,7 @@ from db.queries.statistics_queries import fetch_readed_books_in_specific_date
 from db.queries.statistics_queries import fetch_all_books_with_author
 from db.queries.statistics_queries import fetch_books_with_author_country
 from db.queries.statistics_queries import fetch_finished_books_dates
+from db.queries.statistics_queries import fetch_reading_summary
 
 from utils.logger import logger
 
@@ -74,3 +75,28 @@ def get_books_finished_by_year():
     result = df["year"].value_counts().sort_index()
 
     return result.to_dict()
+
+
+def get_reading_summary():
+
+    rows = fetch_reading_summary()
+
+    df = pd.DataFrame(rows, columns=["book_id", "user_id", "status_date"])
+
+    df["status_date"] = pd.to_datetime(df["status_date"])
+    # df["year"] = df["status_date"].dt.year
+    # df["month"] = df["status_date"].dt.month
+    df["year_month"] = df["status_date"].dt.to_period('M')
+
+    summary = df.groupby("year_month").agg( # agregar funciones
+        unique_users = ("user_id", "nunique"),
+        unique_books = ("book_id", "nunique"),
+        books_finished = ("book_id", "count"),
+        
+    # Permite crear columnas nuevas en base a las creadas en el .agg
+    ).assign(avg_books_per_user = lambda x: (x.books_finished / x.unique_users).round(2))
+
+    # Pasar las fechas a texto
+    summary.index = summary.index.astype(str)
+    # Reiniciar índice y convertir la tabla en una lista de diccionarios
+    return summary.reset_index().to_dict(orient="records") 
