@@ -7,6 +7,7 @@ from services.statistics_service import get_books_per_author
 from services.statistics_service import get_books_per_country
 from services.statistics_service import get_books_finished_by_year
 from services.statistics_service import get_reading_summary
+from services.statistics_service import get_genre_reading_velocity
 from utils.logger import logger
 
 
@@ -74,3 +75,24 @@ def get_monthly_reading_summary():
     except Exception as e:
         logger.error(f"Error getting data: {e}")
         return jsonify({"error": "Database error"}), 500
+
+
+
+@statistics_bp.route("/genre-reading-velocity", methods=["GET"])
+def genre_reading_velocity():
+
+    try:
+        result = get_genre_reading_velocity()
+        if not result:
+            return jsonify({"message": "No data available"}), 200
+        return jsonify(result), 200
+    
+    except psycopg2.DatabaseError as e:
+        logger.error(f"DB Error: {e}")
+        return jsonify({"error": "Service temporarily unavailable"}), 503
+    
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
