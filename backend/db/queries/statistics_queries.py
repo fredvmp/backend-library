@@ -198,3 +198,110 @@ def fetch_genre_reading_velocity():
         conn.close()
 
     return rows
+
+
+def fetch_all_users():
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("Executing query: fetch_all_users")
+
+        query = """
+            SELECT id, username
+            FROM users
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return rows
+
+def fetch_all_ratings():
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("Executing query: fetch_all_ratings")
+
+        query = """
+            SELECT user_id, book_id, score
+            FROM ratings
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return rows
+
+
+def fetch_all_books():
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("Executing query: fetch_all_books")
+
+        query = """
+            SELECT id, title, author_id
+            FROM books
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return rows
+
+def fetch_all_authors():
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("Executing query: fetch_all_authors")
+
+        query = """
+            SELECT id, name
+            FROM authors
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return rows
+

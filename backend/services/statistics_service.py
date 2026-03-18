@@ -6,6 +6,7 @@ from db.queries.statistics_queries import fetch_books_with_author_country
 from db.queries.statistics_queries import fetch_finished_books_dates
 from db.queries.statistics_queries import fetch_reading_summary
 from db.queries.statistics_queries import fetch_genre_reading_velocity
+from db.queries.statistics_queries import fetch_all_users, fetch_all_ratings, fetch_all_books, fetch_all_authors
 
 from utils.logger import logger
 
@@ -104,6 +105,8 @@ def get_reading_summary():
 
 ''' Ranking de géneros según la media de páginas leídas 
     por día por los usuarios en cada género '''
+
+
 def get_genre_reading_velocity():
 
     rows = fetch_genre_reading_velocity()
@@ -127,3 +130,56 @@ def get_genre_reading_velocity():
         "avg_pages", ascending=False).to_dict(orient="records")
 
     return data
+
+
+def get_negative_ratings_ranking():
+
+    rows_users = []
+    rows_ratings = []
+
+    rows_users = fetch_all_users()
+    rows_ratings = fetch_all_ratings()
+
+    df_users = pd.DataFrame(rows_users, columns=["id_user", "username"])
+    df_ratings = pd.DataFrame(rows_ratings, columns=[
+                              "id_user", "book_id", "score"])
+
+    #                            left_on="id_user", right_on="id_user"  (tabla users y rating respectivamente)
+    df_merged = pd.merge(df_users, df_ratings, how="inner", on="id_user")
+    ranking = df_merged.groupby("username").agg(
+        avg_score=("score", "mean"),
+        total_ratings=("score", "count")
+    )
+
+    ranking = ranking[ranking["total_ratings"] > 1]
+
+    ranking = ranking.sort_values("avg_score", ascending=True)
+
+    return ranking.round(2).reset_index().to_dict(orient="records")
+
+
+def get_cult_classics():
+
+    rows_ratings = fetch_all_ratings()
+    rows_books = fetch_all_books()
+    rows_authors = fetch_all_authors()
+
+    df_ratings = pd.DataFrame(rows_ratings, columns=[
+                              "user_id", "book_id", "score"])
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "title_book", "author_id"])
+    df_authors = pd.DataFrame(rows_authors, columns=[
+                              "author_id", "author_name"])
+
+    df_final = pd.merge(df_books, df_authors, on="author_id", how="inner").merge(
+        df_ratings, on="book_id", how="inner")
+    summary = df_final.groupby(["book_id", "title_book"]).agg(
+        avg_score=("score", "mean"),
+        total_ratings=("score", "count"),
+        author_name=("author_name", "first")
+    )
+
+    summary = summary[summary["total_ratings"] > 1]
+    summary = summary.sort_values("avg_score", ascending=False)
+
+    return summary.round(2).reset_index().to_dict(orient="records")
