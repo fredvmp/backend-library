@@ -1,11 +1,8 @@
-from db.connection import get_connection
+from db.connection import get_db_cursor
 from utils.logger import logger
 
 
 def fetch_books():
-
-    conn = get_connection()
-    cur = conn.cursor()
     logger.info("Executing query: fetch_books")
 
     query = """
@@ -18,23 +15,13 @@ def fetch_books():
         ORDER BY b.id;
     """
 
-    cur.execute(query)
-    rows = cur.fetchall()
-
-    cur.close()
-    logger.info("Cursor closed")
-    conn.close()
-    logger.info("Database connection closed")
-
-    return rows
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
 
 
 def fetch_books_with_rating():
-
-    conn = get_connection()
-    cur = conn.cursor()
     logger.info("Executing query: fetch_books_with_rating")
-
 
     query = """
         SELECT
@@ -50,12 +37,107 @@ def fetch_books_with_rating():
         ORDER BY average_rating DESC;
     """
 
-    cur.execute(query)
-    rows = cur.fetchall()
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
 
-    cur.close()
-    logger.info("Cursor closed")
-    conn.close()
-    logger.info("Database connection closed")
 
-    return rows
+def fetch_most_read_books():
+    logger.info("Executing query: fetch_most_read_books")
+
+    query = """
+        SELECT 
+            b.id, 
+            b.title, 
+            a.name AS author, 
+            COUNT(DISTINCT rsh.user_id) AS times_read
+        FROM books b
+        JOIN reading_status_history rsh ON b.id = rsh.book_id
+        JOIN authors a ON b.author_id = a.id
+        WHERE rsh.status = 'FINISHED'
+        GROUP BY b.id, b.title, a.name
+        ORDER BY times_read DESC;
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def fetch_readed_books_in_specific_date(start_date, end_date):
+    logger.info("Executing query: fetch_readed_books_in_specific_date")
+
+    query = """
+        SELECT 
+            b.id,
+            b.title,
+            a.name AS author,
+            ARRAY_AGG(DISTINCT g.name) AS genres,
+            rsh.status_date AS ending_date
+        FROM books b
+        JOIN book_genres bg ON b.id = bg.book_id
+        JOIN genres g ON g.id = bg.genre_id
+        JOIN authors a ON b.author_id = a.id
+        JOIN reading_status_history rsh ON b.id = rsh.book_id
+        WHERE rsh.status = 'FINISHED'
+            AND rsh.status_date BETWEEN %s AND %s
+        GROUP BY b.id, b.title, a.name, rsh.status_date
+        ORDER BY rsh.status_date DESC;
+    """
+    with get_db_cursor() as cursor:
+        cursor.execute(query, (start_date, end_date))
+        return cursor.fetchall()
+
+
+def fetch_all_books_with_author():
+    logger.info("Executing query: fetch_all_books_with_author")
+
+    query = """
+        SELECT a.name
+        FROM books b
+        JOIN authors a ON b.author_id = a.id
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def fetch_books_with_author_country():
+    logger.info("Executing query: fetch_books_with_author_country")
+
+    query = """
+        SELECT a.country
+        FROM books b
+        JOIN authors a ON b.author_id = a.id
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def fetch_all_books():
+    logger.info("Executing query: fetch_all_books")
+
+    query = """
+        SELECT id, title, author_id, genre_id
+        FROM books
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def fetch_all_genres():
+    logger.info("Executing query: fetch_all_genres")
+
+    query = """
+        SELECT id, name
+        FROM genres
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

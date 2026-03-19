@@ -1,9 +1,8 @@
 from flask import Flask
-from db.connection import get_connection
-from routes.books import books_bp
-from routes.statistics import statistics_bp
+from routes.books_bp import books_bp
+from routes.metrics_bp import metrics_bp
+from routes.rankings_bp import rankings_bp
 from utils.error_handler import register_error_handlers
-
 
 
 def create_app():
@@ -12,8 +11,9 @@ def create_app():
     app.json.ensure_ascii = False
 
     app.register_blueprint(books_bp)
-    app.register_blueprint(statistics_bp)
-    
+    app.register_blueprint(metrics_bp)
+    app.register_blueprint(rankings_bp)
+
     register_error_handlers(app)
 
     return app
@@ -29,4 +29,4 @@ def health():
         return {"status": "ok", "database": "connected"}
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
-"""   
+"""

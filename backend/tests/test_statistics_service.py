@@ -1,5 +1,5 @@
 from datetime import date
-from services.statistics_service import get_readed_books_between_dates
+from backend.services.metrics_service import get_readed_books_between_dates
 from unittest.mock import patch
 
 
