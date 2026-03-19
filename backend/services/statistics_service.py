@@ -6,7 +6,7 @@ from db.queries.statistics_queries import fetch_books_with_author_country
 from db.queries.statistics_queries import fetch_finished_books_dates
 from db.queries.statistics_queries import fetch_reading_summary
 from db.queries.statistics_queries import fetch_genre_reading_velocity
-from db.queries.statistics_queries import fetch_all_users, fetch_all_ratings, fetch_all_books, fetch_all_authors
+from db.queries.statistics_queries import fetch_all_users, fetch_all_ratings, fetch_all_books, fetch_all_authors, fetch_all_genres
 
 from utils.logger import logger
 
@@ -167,7 +167,7 @@ def get_cult_classics():
     df_ratings = pd.DataFrame(rows_ratings, columns=[
                               "user_id", "book_id", "score"])
     df_books = pd.DataFrame(rows_books, columns=[
-                            "book_id", "title_book", "author_id"])
+                            "book_id", "title_book", "author_id", "genre_id"])
     df_authors = pd.DataFrame(rows_authors, columns=[
                               "author_id", "author_name"])
 
@@ -180,6 +180,48 @@ def get_cult_classics():
     )
 
     summary = summary[summary["total_ratings"] > 1]
+    summary = summary.sort_values("avg_score", ascending=False)
+
+    return summary.round(2).reset_index().to_dict(orient="records")
+
+
+def get_genre_users_ranking(genre_name: str):
+
+    rows_ratings = fetch_all_ratings()
+    rows_books = fetch_all_books()
+    rows_users = fetch_all_users()
+    rows_genres = fetch_all_genres()
+
+    df_ratings = pd.DataFrame(rows_ratings, columns=[
+                              "user_id", "book_id", "score"])
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "book_title", "book_author", "book_genre"])
+    df_users = pd.DataFrame(rows_users, columns=["user_id", "username"])
+    df_genres = pd.DataFrame(rows_genres, columns=["genre_id", "genre_name"])
+
+    # Limpiar datos
+    # genre_name = genre_name.strip().capitalize()
+    # df_genres["genre_name"] = df_genres["genre_name"].str.strip().str.capitalize()
+
+    df_books["book_genre"] = pd.to_numeric(
+        df_books["book_genre"], errors='coerce') # fuerza el cambio
+    df_genres["genre_id"] = pd.to_numeric(
+        df_genres["genre_id"], errors='coerce')
+
+    df_merged = pd.merge(df_books, df_genres, left_on="book_genre", right_on="genre_id", how="inner").merge(
+        df_ratings, on="book_id", how="inner").merge(df_users, on="user_id", how="inner")
+    df_merged = df_merged[["username", "genre_name",
+                           "book_id", "book_title", "score"]]
+
+    # Filtrar por género
+    df_merged = df_merged[df_merged["genre_name"] == genre_name]
+
+    summary = df_merged.groupby(["username", "genre_name"]).agg(
+        readed_books=("book_id", "count"),
+        avg_score=("score", "mean"),
+    )
+
+    summary = summary[summary["readed_books"] > 1]
     summary = summary.sort_values("avg_score", ascending=False)
 
     return summary.round(2).reset_index().to_dict(orient="records")

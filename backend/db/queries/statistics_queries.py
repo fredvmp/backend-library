@@ -226,6 +226,7 @@ def fetch_all_users():
 
     return rows
 
+
 def fetch_all_ratings():
 
     try:
@@ -262,7 +263,7 @@ def fetch_all_books():
         logger.info("Executing query: fetch_all_books")
 
         query = """
-            SELECT id, title, author_id
+            SELECT id, title, author_id, genre_id
             FROM books
         """
 
@@ -278,6 +279,7 @@ def fetch_all_books():
         conn.close()
 
     return rows
+
 
 def fetch_all_authors():
 
@@ -305,3 +307,28 @@ def fetch_all_authors():
 
     return rows
 
+
+def fetch_all_genres():
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+        logger.info("Executing query: fetch_all_genres")
+
+        query = """
+            SELECT id, name
+            FROM genres
+        """
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    except Exception as e:
+        logger.error(f"Error getting data: {e}")
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return rows
