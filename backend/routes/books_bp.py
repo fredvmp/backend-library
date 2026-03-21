@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, request
-import psycopg2
 from db.queries.books_queries import fetch_most_read_books
 from db.queries.books_queries import fetch_books, fetch_books_with_rating
 from services.metrics_service import get_readed_books_between_dates
