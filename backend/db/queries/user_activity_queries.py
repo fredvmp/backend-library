@@ -40,3 +40,16 @@ def fetch_finished_books_dates():
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+    
+
+def fetch_all_reading_status_history():
+    logger.info("Executing query: fetch_all_reading_status_history")
+
+    query = """
+        SELECT *
+        FROM reading_status_history
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

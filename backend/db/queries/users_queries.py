@@ -13,3 +13,5 @@ def fetch_all_users():
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+

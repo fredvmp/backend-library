@@ -31,3 +31,11 @@ def fetch_genre_reading_velocity():
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+    
+
+def fetch_dropout_rate():
+    logger.info("Executing query: fetch_dropout_rate")
+
+    query = """
+        
+        """
