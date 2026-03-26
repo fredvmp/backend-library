@@ -4,8 +4,7 @@ from db.queries.books_queries import fetch_readed_books_in_specific_date
 from db.queries.user_activity_queries import fetch_reading_summary
 from db.queries.analytics_queries import fetch_genre_reading_velocity
 from db.queries.user_activity_queries import fetch_all_reading_status_history
-from db.queries.books_queries import fetch_all_books
-from db.queries.books_queries import fetch_all_genres
+from db.queries.books_queries import fetch_all_books, fetch_all_genres, fetch_all_book_editions
 
 
 def get_readed_books_between_dates(start_date, end_date):
@@ -105,7 +104,7 @@ def get_genre_dropout_rate():
     df_merged = pd.merge(df_rsh, df_books, how="inner", left_on="rsh_book_id", right_on="book_id").merge(
         df_genres, how="inner", left_on="book_genre_id", right_on="genre_id")
     df_merged = df_merged[["book_id", "genre_name", "genre_id",
-                           "rsh_status", "rsh_status_date"]]  # "genre_id"
+                           "rsh_status", "rsh_status_date"]]
 
     """
     if df_merged.empty:
@@ -139,3 +138,35 @@ def get_genre_dropout_rate():
     ).sort_values("dropout_rate", ascending=False).to_dict(orient="records")
 
     return result
+
+
+def get_genre_format_popularity():
+
+    rows_books = fetch_all_books()
+    rows_genres = fetch_all_genres()
+    rows_book_editions = fetch_all_book_editions()
+
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "book_title", "book_author", "book_genre_id"])
+    df_genres = pd.DataFrame(rows_genres, columns=["genre_id", "genre_name"])
+    df_book_editions = pd.DataFrame(rows_book_editions, columns=[
+                                    "book_edition_id", "isbn", "format", "book_id"])
+
+    df_merged = pd.merge(df_books, df_genres, how="inner", left_on="book_genre_id",
+                         right_on="genre_id").merge(df_book_editions, how="inner", on="book_id")
+
+    pivot_popularity = (
+        df_merged
+        .dropna(subset=["isbn"])
+        .loc[lambda x: (x["isbn"].notna()) & (x["isbn"] != "")]
+        .pivot_table(
+            index="genre_name",
+            columns="format",
+            values="book_edition_id",
+            aggfunc="count",
+            fill_value=0,
+            margins=True
+        )
+    )
+
+    return pivot_popularity

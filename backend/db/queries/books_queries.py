@@ -141,3 +141,15 @@ def fetch_all_genres():
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
+
+def fetch_all_book_editions():
+    logger.info("Executing query: fetch_all_book_editions")
+
+    query = """
+        SELECT id, isbn, format, book_id
+        FROM book_editions
+    """
+
+    with get_db_cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

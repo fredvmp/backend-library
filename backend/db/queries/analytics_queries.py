@@ -33,9 +33,4 @@ def fetch_genre_reading_velocity():
         return cursor.fetchall()
     
 
-def fetch_dropout_rate():
-    logger.info("Executing query: fetch_dropout_rate")
 
-    query = """
-        
-        """
