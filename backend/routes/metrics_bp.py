@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 import psycopg2
-from services.metrics_service import get_reading_summary, get_genre_reading_velocity, get_genre_dropout_rate, get_genre_format_popularity
+from services.metrics_service import get_reading_summary, get_genre_reading_velocity, get_genre_dropout_rate, get_genre_format_popularity, get_user_reading_velocity
 from services.books_service import get_books_per_author, get_books_per_country, get_books_finished_by_year
 from utils.logger import logger
 
@@ -54,4 +54,11 @@ def genre_format_popularity():
     if result.empty:
         return jsonify({"message": "No data available"}), 200
     # return jsonify(result.to_dict(orient="index")), 200
+    return result.to_html(classes="table table-striped"), 200
+
+@metrics_bp.route("/user-reading-velocity", methods=["GET"])
+def user_reading_velocity():
+    result = get_user_reading_velocity()
+    if result.empty:
+        return jsonify({"message": "No data available"}), 200
     return result.to_html(classes="table table-striped"), 200

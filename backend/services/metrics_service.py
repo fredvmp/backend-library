@@ -2,6 +2,7 @@ import pandas as pd
 from utils.logger import logger
 from db.queries.books_queries import fetch_readed_books_in_specific_date
 from db.queries.user_activity_queries import fetch_reading_summary
+from db.queries.users_queries import fetch_all_users
 from db.queries.analytics_queries import fetch_genre_reading_velocity
 from db.queries.user_activity_queries import fetch_all_reading_status_history
 from db.queries.books_queries import fetch_all_books, fetch_all_genres, fetch_all_book_editions
@@ -170,3 +171,43 @@ def get_genre_format_popularity():
     )
 
     return pivot_popularity
+
+
+def get_user_reading_velocity():
+
+    rows_books = fetch_all_books()
+    rows_rsh = fetch_all_reading_status_history()
+    rows_users = fetch_all_users()
+
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "book_title", "book_author", "book_genre_id"])
+    df_rsh = pd.DataFrame(rows_rsh, columns=[
+                          "rsh_id", "rsh_status", "rsh_status_date", "rsh_user_id", "rsh_book_id"])
+    df_users = pd.DataFrame(rows_users, columns=["user_id", "username"])
+
+    df_merged = pd.merge(df_books, df_rsh, how="inner", left_on="book_id", right_on="rsh_book_id").merge(
+        df_users, left_on="rsh_user_id", right_on="user_id")
+
+    df_merged = df_merged[["book_id", "rsh_status",
+                           "rsh_status_date", "username"]]
+
+    df_merged["rsh_status_date"] = pd.to_datetime(df_merged["rsh_status_date"])
+    df_merged["year_month"] = df_merged["rsh_status_date"].dt.to_period(
+        "M")  # 2026-03
+
+    pivot_velocity = (
+        df_merged
+        .loc[df_merged["rsh_status"].isin(["FINISHED", "READING", "ABANDONED"])]
+        .groupby("username").filter(lambda x: x["rsh_status"].count() >= 3)
+        .pivot_table(
+            index=["year_month", "username"],
+            columns="rsh_status",
+            values="book_id",
+            aggfunc="nunique",
+            fill_value=0
+        )
+    )
+
+    return pivot_velocity
+
+
