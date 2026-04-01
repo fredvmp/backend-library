@@ -146,7 +146,7 @@ def fetch_all_book_editions():
     logger.info("Executing query: fetch_all_book_editions")
 
     query = """
-        SELECT id, isbn, format, book_id
+        SELECT id, isbn, format, book_id, pages
         FROM book_editions
     """
 

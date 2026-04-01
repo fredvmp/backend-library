@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import json
 from utils.logger import logger
 from db.queries.books_queries import fetch_readed_books_in_specific_date
 from db.queries.user_activity_queries import fetch_reading_summary
@@ -151,7 +153,7 @@ def get_genre_format_popularity():
                             "book_id", "book_title", "book_author", "book_genre_id"])
     df_genres = pd.DataFrame(rows_genres, columns=["genre_id", "genre_name"])
     df_book_editions = pd.DataFrame(rows_book_editions, columns=[
-                                    "book_edition_id", "isbn", "format", "book_id"])
+                                    "book_edition_id", "isbn", "format", "book_id", "pages"])
 
     df_merged = pd.merge(df_books, df_genres, how="inner", left_on="book_genre_id",
                          right_on="genre_id").merge(df_book_editions, how="inner", on="book_id")
@@ -173,7 +175,7 @@ def get_genre_format_popularity():
     return pivot_popularity
 
 
-def get_user_reading_velocity():
+def get_pivot_user_reading_velocity():
 
     rows_books = fetch_all_books()
     rows_rsh = fetch_all_reading_status_history()
@@ -211,3 +213,77 @@ def get_user_reading_velocity():
     return pivot_velocity
 
 
+def get_pbi_user_reading_velocity():
+
+    rows_books = fetch_all_books()
+    rows_rsh = fetch_all_reading_status_history()
+    rows_users = fetch_all_users()
+
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "book_title", "book_author", "book_genre_id"])
+    df_rsh = pd.DataFrame(rows_rsh, columns=[
+                          "rsh_id", "rsh_status", "rsh_status_date", "rsh_user_id", "rsh_book_id"])
+    df_users = pd.DataFrame(rows_users, columns=["user_id", "username"])
+
+    df_merged = pd.merge(df_books, df_rsh, how="inner", left_on="book_id", right_on="rsh_book_id").merge(
+        df_users, left_on="rsh_user_id", right_on="user_id")
+
+    df_merged = df_merged[["book_id", "rsh_status",
+                           "rsh_status_date", "username"]]
+
+    df_merged["rsh_status_date"] = pd.to_datetime(df_merged["rsh_status_date"])
+    # df_merged["year_month"] = df_merged["rsh_status_date"].dt.to_period("M")  # 2026-03
+
+    result = (
+        df_merged
+        .loc[df_merged["rsh_status"].isin(["FINISHED", "READING", "ABANDONED"])]
+        .groupby("username").filter(lambda x: x["rsh_status"].count() >= 3)
+    ).copy()
+
+    result["rsh_status_date"] = result["rsh_status_date"].dt.strftime(
+        '%Y-%m-%d')
+
+    return result
+
+
+def get_user_reading_metrics():
+    rows_rsh = fetch_all_reading_status_history()
+    rows_users = fetch_all_users()
+    rows_books = fetch_all_books()
+    rows_editions = fetch_all_book_editions()
+
+    df_rsh = pd.DataFrame(rows_rsh, columns=["rsh_id", "rsh_status", "rsh_status_date", "user_id", "book_id"])
+    df_users = pd.DataFrame(rows_users, columns=["user_id", "username"])
+    df_books = pd.DataFrame(rows_books, columns=["book_id", "title", "author", "genre_id"])
+    df_editions = pd.DataFrame(rows_editions, columns=["edition_id", "isbn", "format", "book_id", "pages"])
+
+    df_merged = df_rsh.merge(df_users, on="user_id").merge(df_books, on="book_id").merge(df_editions, on="book_id")
+
+    df_merged["rsh_status_date"] = pd.to_datetime(df_merged["rsh_status_date"])
+    df_merged = df_merged.sort_values(["username", "book_id", "rsh_status_date"])
+
+    df_merged["prev_date"] = df_merged.groupby(["username", "book_id"])["rsh_status_date"].shift(1)
+    df_merged["prev_status"] = df_merged.groupby(["username", "book_id"])["rsh_status"].shift(1)
+
+    df_final = df_merged[(df_merged["rsh_status"] == "FINISHED") & (df_merged["prev_status"] == "READING")].copy()
+
+    if df_final.empty:
+        return df_final
+
+    df_final["days_taken"] = (df_final["rsh_status_date"] - df_final["prev_date"]).dt.days
+    df_final["reading_speed"] = df_final["pages"] / df_final["days_taken"].replace(0, 1)
+
+    first_ever = df_merged.groupby("username")["rsh_status_date"].transform("min")
+    df_final["user_seniority_days"] = (pd.Timestamp.now() - first_ever).dt.days
+
+    columns_to_send = ["username", "title", "pages", "days_taken", "reading_speed", "user_seniority_days", "format"]
+    df_output = df_final[columns_to_send].copy()
+
+    df_output = df_output.replace([np.inf, -np.inf], 0).fillna(0)
+    df_output["reading_speed"] = df_output["reading_speed"].round(2)
+
+    df_output["days_taken"] = df_output["days_taken"].astype("Int64")
+    df_output["user_seniority_days"] = df_output["user_seniority_days"].astype("Int64")
+    df_output["pages"] = df_output["pages"].astype("Int64")
+
+    return df_output
