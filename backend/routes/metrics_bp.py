@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, Response
 import psycopg2
-from services.metrics_service import get_reading_summary, get_genre_reading_velocity, get_genre_dropout_rate, get_genre_format_popularity, get_pivot_user_reading_velocity, get_pbi_user_reading_velocity, get_user_reading_metrics
+from services.metrics_service import get_reading_summary, get_genre_reading_velocity, get_genre_dropout_rate, get_genre_format_popularity, get_pivot_user_reading_velocity, get_pbi_user_reading_velocity, get_user_reading_metrics, get_book_quality_metrics
 from services.books_service import get_books_per_author, get_books_per_country, get_books_finished_by_year
 from utils.logger import logger
 
@@ -77,6 +77,14 @@ def pbi_user_reading_velocity():
 @metrics_bp.route("/user-reading-metrics", methods=["GET"])
 def user_reading_metrics():
     result = get_user_reading_metrics()
+    if result.empty:
+        return jsonify([]), 200
+    data = result.to_dict(orient="records")
+    return jsonify(data), 200
+
+@metrics_bp.route("/book-quality-metrics", methods=["GET"])
+def book_quality_metrics():
+    result = get_book_quality_metrics()
     if result.empty:
         return jsonify([]), 200
     data = result.to_dict(orient="records")

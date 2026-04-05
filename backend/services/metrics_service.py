@@ -3,11 +3,11 @@ import numpy as np
 import json
 from utils.logger import logger
 from db.queries.books_queries import fetch_readed_books_in_specific_date
-from db.queries.user_activity_queries import fetch_reading_summary
+from db.queries.user_activity_queries import fetch_reading_summary, fetch_all_ratings
 from db.queries.users_queries import fetch_all_users
 from db.queries.analytics_queries import fetch_genre_reading_velocity
 from db.queries.user_activity_queries import fetch_all_reading_status_history
-from db.queries.books_queries import fetch_all_books, fetch_all_genres, fetch_all_book_editions
+from db.queries.books_queries import fetch_all_books, fetch_all_genres, fetch_all_book_editions, fetch_books_detailed
 
 
 def get_readed_books_between_dates(start_date, end_date):
@@ -252,38 +252,103 @@ def get_user_reading_metrics():
     rows_books = fetch_all_books()
     rows_editions = fetch_all_book_editions()
 
-    df_rsh = pd.DataFrame(rows_rsh, columns=["rsh_id", "rsh_status", "rsh_status_date", "user_id", "book_id"])
+    df_rsh = pd.DataFrame(rows_rsh, columns=[
+                          "rsh_id", "rsh_status", "rsh_status_date", "user_id", "book_id"])
     df_users = pd.DataFrame(rows_users, columns=["user_id", "username"])
-    df_books = pd.DataFrame(rows_books, columns=["book_id", "title", "author", "genre_id"])
-    df_editions = pd.DataFrame(rows_editions, columns=["edition_id", "isbn", "format", "book_id", "pages"])
+    df_books = pd.DataFrame(rows_books, columns=[
+                            "book_id", "title", "author", "genre_id"])
+    df_editions = pd.DataFrame(rows_editions, columns=[
+                               "edition_id", "isbn", "format", "book_id", "pages"])
 
-    df_merged = df_rsh.merge(df_users, on="user_id").merge(df_books, on="book_id").merge(df_editions, on="book_id")
+    df_merged = df_rsh.merge(df_users, on="user_id").merge(
+        df_books, on="book_id").merge(df_editions, on="book_id")
 
     df_merged["rsh_status_date"] = pd.to_datetime(df_merged["rsh_status_date"])
-    df_merged = df_merged.sort_values(["username", "book_id", "rsh_status_date"])
+    df_merged = df_merged.sort_values(
+        ["username", "book_id", "rsh_status_date"])
 
-    df_merged["prev_date"] = df_merged.groupby(["username", "book_id"])["rsh_status_date"].shift(1)
-    df_merged["prev_status"] = df_merged.groupby(["username", "book_id"])["rsh_status"].shift(1)
+    df_merged["prev_date"] = df_merged.groupby(["username", "book_id"])[
+        "rsh_status_date"].shift(1)
+    df_merged["prev_status"] = df_merged.groupby(["username", "book_id"])[
+        "rsh_status"].shift(1)
 
-    df_final = df_merged[(df_merged["rsh_status"] == "FINISHED") & (df_merged["prev_status"] == "READING")].copy()
+    df_final = df_merged[(df_merged["rsh_status"] == "FINISHED") & (
+        df_merged["prev_status"] == "READING")].copy()
 
     if df_final.empty:
         return df_final
 
-    df_final["days_taken"] = (df_final["rsh_status_date"] - df_final["prev_date"]).dt.days
-    df_final["reading_speed"] = df_final["pages"] / df_final["days_taken"].replace(0, 1)
+    df_final["days_taken"] = (
+        df_final["rsh_status_date"] - df_final["prev_date"]).dt.days
+    df_final["reading_speed"] = df_final["pages"] / \
+        df_final["days_taken"].replace(0, 1)
 
-    first_ever = df_merged.groupby("username")["rsh_status_date"].transform("min")
+    first_ever = df_merged.groupby(
+        "username")["rsh_status_date"].transform("min")
     df_final["user_seniority_days"] = (pd.Timestamp.now() - first_ever).dt.days
 
-    columns_to_send = ["username", "title", "pages", "days_taken", "reading_speed", "user_seniority_days", "format"]
+    columns_to_send = ["username", "title", "pages", "days_taken",
+                       "reading_speed", "user_seniority_days", "format"]
     df_output = df_final[columns_to_send].copy()
 
     df_output = df_output.replace([np.inf, -np.inf], 0).fillna(0)
     df_output["reading_speed"] = df_output["reading_speed"].round(2)
 
     df_output["days_taken"] = df_output["days_taken"].astype("Int64")
-    df_output["user_seniority_days"] = df_output["user_seniority_days"].astype("Int64")
+    df_output["user_seniority_days"] = df_output["user_seniority_days"].astype(
+        "Int64")
     df_output["pages"] = df_output["pages"].astype("Int64")
 
     return df_output
+
+
+def get_book_quality_metrics():
+
+    rows_books_detailed = fetch_books_detailed()
+    rows_rsh = fetch_all_reading_status_history()
+    rows_ratings = fetch_all_ratings()
+
+    df_books_detailed = pd.DataFrame(rows_books_detailed, columns=[
+                                     "book_id", "title", "author_name", "genre_name", "pages", "format", "isbn"])
+    df_ratings = pd.DataFrame(rows_ratings, columns=[
+                              "user_id", "book_id", "score"])
+    df_rsh = pd.DataFrame(
+        rows_rsh, columns=["rsh_id", "status", "status_date", "user_id", "book_id"])
+
+    df_rsh = df_rsh.drop(columns=["status_date", "user_id", "rsh_id", ])
+    df_ratings = df_ratings.drop(columns=["user_id"])
+
+    df_avg_ratings = df_ratings.groupby(
+        "book_id")["score"].mean().reset_index()
+    df_avg_ratings.columns = ["book_id", "avg_score"]
+
+    """
+    status_dummies = pd.get_dummies(
+        df_rsh[df_rsh["status"].isin(["FINISHED", "ABANDONED"])], columns=["status"])
+    
+    df_status_counts = status_dummies.groupby("book_id").agg({
+        "status_FINISHED": "sum",
+        "status_ABANDONED": "sum"
+    }).reset_index()
+    """
+
+    df_status_counts = df_rsh.groupby("book_id")["status"].agg([
+        ('total_finished', lambda x: (x == 'FINISHED').sum()),
+        ('total_abandoned', lambda x: (x == 'ABANDONED').sum())
+    ]).reset_index()
+
+    df_status_counts.columns = ["book_id", "total_finished", "total_abandoned"]
+
+    df_merged = df_books_detailed.merge(df_avg_ratings, on="book_id", how="left").merge(
+        df_status_counts, on="book_id", how="left").fillna(0)
+    
+    df_merged["avg_score"] = df_merged["avg_score"].round(2)
+    df_merged["total_finished"] = df_merged["total_finished"].astype(int)
+    df_merged["total_abandoned"] = df_merged["total_abandoned"].astype(int)
+
+    print(f"Libros detallados: {len(df_books_detailed)}")
+    print(f"Ratings procesados: {len(df_avg_ratings)}")
+    print(f"Estados procesados: {len(df_status_counts)}")
+    print(f"Resultado final: {len(df_merged)}")
+
+    return df_merged
